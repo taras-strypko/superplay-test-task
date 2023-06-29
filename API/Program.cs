@@ -14,9 +14,10 @@ builder.Logging.AddSerilog(logger);
 
 builder.Services.AddSingleton<PlayerRepository>();
 builder.Services.AddSingleton<PlayersPool>();
-builder.Services.AddScoped<IMessageHandler<LoginRequest, LoginResponse>, LoginHandler>();
-builder.Services.AddScoped<IMessageHandler<UpdateResourceRequest, UpdateResourceResponse>, UpdateResourceHandler>();
-builder.Services.AddScoped<IMessageHandler<SendGiftRequest, SendGiftResponse>, SendGiftHandler>();
+
+builder.Services.RegisterMessageHandler<LoginRequest, LoginResponse, LoginHandler>();
+builder.Services.RegisterMessageHandler<UpdateResourceRequest, UpdateResourceResponse, UpdateResourceHandler>();
+builder.Services.RegisterMessageHandler<SendGiftRequest, SendGiftResponse, SendGiftHandler>();
 
 var app = builder.Build();
 

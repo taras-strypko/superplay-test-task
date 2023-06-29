@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 namespace API.Features
 {
     [Authorize]
-    public class SendGiftHandler : IMessageHandler<SendGiftRequest, SendGiftResponse>
+    public class SendGiftHandler : MessageHandlerBase<SendGiftRequest, SendGiftResponse>
     {
         private readonly PlayerRepository playerRepository;
         private readonly PlayersPool communicationManager;
@@ -16,8 +16,8 @@ namespace API.Features
             this.communicationManager = communicationManager;
         }
 
-        public async Task<SendGiftResponse> Handle(SendGiftRequest req, OperationContext context)
-        {
+        public override async Task<SendGiftResponse> Handle(SendGiftRequest req, OperationContext context)
+        {   
             var player = playerRepository.Get(context.PlayerId!.Value) ?? throw OperationException.Create(Errors.PLAYER_NOT_FOUND);
             var friend = playerRepository.Get(req.FriendPlayerId) ?? throw OperationException.Create(Errors.FRIEND_NOT_FOUND);
 

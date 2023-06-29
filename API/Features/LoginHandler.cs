@@ -4,18 +4,18 @@ using Domain;
 
 namespace API.Features
 {
-    public class LoginHandler : IMessageHandler<LoginRequest, LoginResponse>
+    public class LoginHandler : MessageHandlerBase<LoginRequest, LoginResponse>
     {
         private readonly PlayerRepository playerRepository;
-        private readonly PlayersPool communicationManager;
+        private readonly PlayersPool playersPool;
 
         public LoginHandler(PlayerRepository playerRepository, PlayersPool communicationManager)
         {
             this.playerRepository = playerRepository;
-            this.communicationManager = communicationManager;
+            this.playersPool = communicationManager;
         }
 
-        public Task<LoginResponse> Handle(LoginRequest req, OperationContext context)
+        public override Task<LoginResponse> Handle(LoginRequest req, OperationContext context)
         {
             var player = playerRepository.Get(req.DeviceId);
 
@@ -29,7 +29,7 @@ namespace API.Features
             }
 
             // should be event, but not this time :)
-            communicationManager.PlayerLoggedIn(player.Id, context.Channel!);
+            playersPool.PlayerLoggedIn(player.Id, context.Channel!);
 
             return Task.FromResult(new LoginResponse { PlayerId = player.Id });
         }

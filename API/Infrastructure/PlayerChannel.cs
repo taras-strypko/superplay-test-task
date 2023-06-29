@@ -20,27 +20,46 @@ namespace API.Infrastructure
 
         public async Task Listen(CancellationToken cancellationToken)
         {
-            var buffer = new byte[1024 * 4];
+            var readResult = await ReadMessageByChunks(webSocket, cancellationToken);
 
-            var receiveResult = await webSocket.ReceiveAsync(
-                new ArraySegment<byte>(buffer), cancellationToken);
-
-            while (!receiveResult.CloseStatus.HasValue)
+            while (!readResult.ReceiveResult.CloseStatus.HasValue)
             {
-                var messageString = Encoding.UTF8.GetString(buffer, 0, receiveResult.Count);
+                var messageString = Encoding.UTF8.GetString(readResult.Data, 0, readResult.Data.Length);
                 var message = JsonSerializer.Deserialize<Message>(messageString);
 
                 OnMessage?.Invoke(message);
 
-                receiveResult = await webSocket.ReceiveAsync(
-                    new ArraySegment<byte>(buffer), cancellationToken);
+                readResult = await ReadMessageByChunks(webSocket, cancellationToken);
             }
+
             OnClose?.Invoke();
 
             await webSocket.CloseAsync(
-                receiveResult.CloseStatus.Value,
-                receiveResult.CloseStatusDescription,
-                CancellationToken.None);
+                readResult.ReceiveResult.CloseStatus!.Value,
+                readResult.ReceiveResult.CloseStatusDescription,
+                cancellationToken);
+        }
+
+        private async Task<(WebSocketReceiveResult ReceiveResult, byte[] Data)> ReadMessageByChunks(WebSocket webSocket, CancellationToken cancellationToken)
+        {
+            const int MESSAGE_MAX_SIZE = 1024 * 16; // let's define some upper limit for message size, as with large messages the game might become slow.
+            const int CHUNK_SIZE = 1024; 
+            var framePayload = new ArraySegment<byte>(new byte[MESSAGE_MAX_SIZE]);
+            var buffer = new ArraySegment<byte>(new byte[CHUNK_SIZE]);
+
+            WebSocketReceiveResult receiveResult;
+            int framePayloadSize = 0;
+            do
+            {
+                receiveResult = await webSocket.ReceiveAsync(buffer, cancellationToken);
+
+                var data = buffer.Slice(0, receiveResult.Count);
+                data.CopyTo(framePayload.Slice(framePayloadSize, receiveResult.Count));
+                framePayloadSize += receiveResult.Count;
+
+            } while (!receiveResult.EndOfMessage);
+
+            return (receiveResult, framePayload[0..framePayloadSize].ToArray());
         }
 
         public async Task SendMessage<T>(T payload)

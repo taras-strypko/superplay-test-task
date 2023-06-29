@@ -6,7 +6,7 @@ using System.Data;
 namespace API.Features
 {
     [Authorize]
-    public class UpdateResourceHandler : IMessageHandler<UpdateResourceRequest, UpdateResourceResponse>
+    public class UpdateResourceHandler : MessageHandlerBase<UpdateResourceRequest, UpdateResourceResponse>
     {
         private readonly PlayerRepository playerRepository;
 
@@ -15,7 +15,7 @@ namespace API.Features
             this.playerRepository = playerRepository;
         }
 
-        public Task<UpdateResourceResponse> Handle(UpdateResourceRequest req, OperationContext context)
+        public override Task<UpdateResourceResponse> Handle(UpdateResourceRequest req, OperationContext context)
         {
             var player = playerRepository.Get(context.PlayerId!.Value);
 
@@ -38,8 +38,7 @@ namespace API.Features
                     Type = c.Key,
                     Amount = c.Value
                 }).ToArray()
-            }); ;
+            });
         }
-
     }
 }
